@@ -13,13 +13,13 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # hyperparameters
 num_epochs = 10
-batch_size = 64
+batch_size = 50
 learning_rate = 0.001
-momentum = .9
+# momentum = .9
 no_filter1 = 30
 no_filter2 = 50
-no_neurons = 500
-first_k = 10000
+no_neurons = 300
+first_k = 5000
 log_interval = int(1000 / batch_size)
 
 path_train = './data/mnist_count_train.pickle'
@@ -58,7 +58,7 @@ def get_dataset(path: str, shuffle: bool = False, first_k=1000) -> DataLoader:
 
 train_loader = get_dataset(
     path=path_train,
-    shuffle=True,
+    shuffle=False,
     first_k=first_k
 )
 
@@ -100,6 +100,11 @@ class ConvNet(nn.Module):
         return x
 
 
+def plot_loss(loss, label, color='blue'):
+    plt.plot(loss, label=label, color=color)
+    plt.legend()
+
+
 model = ConvNet().to(device)
 
 optimizer = torch.optim.Adam(
@@ -107,6 +112,8 @@ optimizer = torch.optim.Adam(
 )
 
 n_total_steps = len(train_loader)
+losses_train = []
+losses_test = []
 
 for epoch in range(num_epochs):
     for i, (images, labels) in enumerate(train_loader):
@@ -116,8 +123,9 @@ for epoch in range(num_epochs):
         images = preprocess(images)
         # forward
         outputs = model(images)
-
+        # print(outputs)
         loss = F.mse_loss(outputs, labels)
+        losses_train.append(loss.detach().cpu().numpy())
         # loss = F.nll_loss(F.softmax(outputs), labels)
 
         # backward
@@ -149,3 +157,6 @@ with torch.no_grad():
 
     acc = 100.0 * n_correct / n_samples
     print(f'Accuracy of the network: {acc}%')
+
+plot_loss(losses_train, label='loss')
+plt.show()
